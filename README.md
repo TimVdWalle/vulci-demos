@@ -13,9 +13,9 @@ instructions are available in the
 
 ## Demo index
 
-| ID | Demo | Description | Language phase |
-| --- | --- | --- | --- |
-| `demo-logicviz` | [LogicViz](logicviz/README.md) | Visualizes and evaluates three Boolean logic circuits in the terminal. | Phase 15 |
+| ID | Demo | Description | Language phase     |
+| --- | --- | --- |--------------------|
+| `demo-logicviz` | [LogicViz](logicviz/README.md) | Visualizes and evaluates three Boolean logic circuits in the terminal. | Phase 15  (0.15.0) |
 
 ## Run a demo
 
