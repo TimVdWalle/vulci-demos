@@ -1,0 +1,96 @@
+// Phase: Phase 15B demo
+
+import 'model.vci'
+
+// Hardcoded circuit source for v1.
+//
+// Only this file represents the input source. The visualizer does not depend on
+// where these Circuit values came from, so a later external-file loader can
+// replace this layer without changing the evaluator.
+
+// Circuit 1
+// OUT = AND(A, B)
+$simple_circuit = Circuit(
+    name: "Simple AND",
+    root: CircuitNode(
+        type: GateType.And,
+        left: CircuitNode(
+            type: GateType.Input,
+            label: "A",
+            input: true,
+        ),
+        right: CircuitNode(
+            type: GateType.Input,
+            label: "B",
+            input: false,
+        ),
+    ),
+)
+
+// Circuit 2
+// OUT = OR(AND(A, B), C)
+$medium_circuit = Circuit(
+    name: "Two-stage AND → OR",
+    root: CircuitNode(
+        type: GateType.Or,
+        left: CircuitNode(
+            type: GateType.And,
+            left: CircuitNode(
+                type: GateType.Input,
+                label: "A",
+                input: true,
+            ),
+            right: CircuitNode(
+                type: GateType.Input,
+                label: "B",
+                input: true,
+            ),
+        ),
+        right: CircuitNode(
+            type: GateType.Input,
+            label: "C",
+            input: false,
+        ),
+    ),
+)
+
+// Circuit 3
+// OUT = OR(
+//     AND(A, NOT(B)),
+//     XOR(C, D),
+// )
+$circuit = Circuit(
+    name: "Nested AND / NOT / XOR / OR",
+    root: CircuitNode(
+        type: GateType.Or,
+        left: CircuitNode(
+            type: GateType.And,
+            left: CircuitNode(
+                type: GateType.Input,
+                label: "A",
+                input: true,
+            ),
+            right: CircuitNode(
+                type: GateType.Not,
+                left: CircuitNode(
+                    type: GateType.Input,
+                    label: "B",
+                    input: false,
+                ),
+            ),
+        ),
+        right: CircuitNode(
+            type: GateType.Xor,
+            left: CircuitNode(
+                type: GateType.Input,
+                label: "C",
+                input: true,
+            ),
+            right: CircuitNode(
+                type: GateType.Input,
+                label: "D",
+                input: true,
+            ),
+        ),
+    ),
+)

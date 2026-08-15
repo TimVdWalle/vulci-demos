@@ -1,0 +1,250 @@
+// Phase: Phase 15B demo
+
+import 'circuit.vci'
+
+fn signal(bool value) returns tuple(str, str) {
+    if (value) {
+        return ("🟢", "true")
+    }
+
+    ("🔴", "false")
+}
+
+fn wire_signal(bool value) returns str {
+    if (value) {
+        return "🟢 true  "
+    }
+
+    "🔴 false "
+}
+
+fn spaces(int count) returns str {
+    if (count <= 0) {
+        return ""
+    }
+
+    " " + spaces(count - 1)
+}
+
+fn print_circuit_heading(int number, Circuit circuit) returns bool {
+    title = "CIRCUIT {{number}} — {{circuit.name}}"
+    title_padding = spaces(76 - title.count())
+
+    print(value: "╔══════════════════════════════════════════════════════════════════════════════╗")
+    print(value: "║ {{title}}{{title_padding}} ║")
+
+    output = circuit.output()
+
+    if (output is bool) {
+        result = signal(output)
+        output_text = "Output : {{result[0]}} {{result[1]}}"
+        output_padding = spaces(75 - output_text.count())
+        print(value: "║ {{output_text}}{{output_padding}} ║")
+        print(value: "╚══════════════════════════════════════════════════════════════════════════════╝")
+        print(value: "")
+        return true
+    }
+
+    output_text = "Output : ⚠️ invalid circuit structure"
+    output_padding = spaces(75 - output_text.count())
+    print(value: "║ {{output_text}}{{output_padding}} ║")
+    print(value: "╚══════════════════════════════════════════════════════════════════════════════╝")
+    print(value: "")
+
+    false
+}
+
+fn is_input_node(CircuitNode|null node) returns bool {
+    if (node is CircuitNode) {
+        return node.type == GateType.Input and node.is_valid()
+    }
+
+    false
+}
+
+fn is_simple_schema(Circuit circuit) returns bool {
+    root = circuit.root
+
+    root.type == GateType.And
+        and is_input_node(root.left)
+        and is_input_node(root.right)
+}
+
+fn is_medium_schema(Circuit circuit) returns bool {
+    root = circuit.root
+
+    if (not (root.type == GateType.Or and root.left is CircuitNode)) {
+        return false
+    }
+
+    and_gate = root.left
+
+    and_gate.type == GateType.And
+        and is_input_node(and_gate.left)
+        and is_input_node(and_gate.right)
+        and is_input_node(root.right)
+}
+
+fn is_advanced_schema(Circuit circuit) returns bool {
+    root = circuit.root
+
+    if (not (
+        root.type == GateType.Or
+        and root.left is CircuitNode
+        and root.right is CircuitNode
+    )) {
+        return false
+    }
+
+    and_gate = root.left
+    xor_gate = root.right
+
+    if (not (
+        and_gate.type == GateType.And
+        and and_gate.right is CircuitNode
+        and xor_gate.type == GateType.Xor
+    )) {
+        return false
+    }
+
+    not_gate = and_gate.right
+
+    is_input_node(and_gate.left)
+        and not_gate.type == GateType.Not
+        and is_input_node(not_gate.left)
+        and not_gate.right == null
+        and is_input_node(xor_gate.left)
+        and is_input_node(xor_gate.right)
+}
+
+fn render_simple(Circuit circuit) returns null {
+    if (not is_simple_schema(circuit)) {
+        print(value: "DIAGRAM UNAVAILABLE: expected AND(Input, Input).")
+        return
+    }
+
+    root = circuit.root
+
+    if (root.left is CircuitNode and root.right is CircuitNode) {
+        a = wire_signal(root.left.evaluate())
+        b = wire_signal(root.right.evaluate())
+        output = wire_signal(root.evaluate())
+
+        print(value: "A  {{a}}───────┐")
+        print(value: "                   ├────[ AND ]──── {{output}}")
+        print(value: "B  {{b}}───────┘")
+    }
+
+    null
+}
+
+fn render_medium(Circuit circuit) returns null {
+    if (not is_medium_schema(circuit)) {
+        print(value: "DIAGRAM UNAVAILABLE: expected OR(AND(Input, Input), Input).")
+        return
+    }
+
+    root = circuit.root
+
+    if (root.left is CircuitNode and root.right is CircuitNode) {
+        and_gate = root.left
+        c_node = root.right
+
+        if (and_gate.left is CircuitNode and and_gate.right is CircuitNode) {
+            a = wire_signal(and_gate.left.evaluate())
+            b = wire_signal(and_gate.right.evaluate())
+            and_output = wire_signal(and_gate.evaluate())
+            c = wire_signal(c_node.evaluate())
+            output = wire_signal(root.evaluate())
+
+            print(value: "A  {{a}}───────┐")
+            print(value: "                   ├────[ AND ]──── {{and_output}}────┐")
+            print(value: "B  {{b}}───────┘                             │")
+            print(value: "                                                 ├────[ OR ]──── {{output}}")
+            print(value: "C  {{c}}─────────────────────────────────────┘")
+        }
+    }
+
+    null
+}
+
+fn render_advanced(Circuit circuit) returns null {
+    if (not is_advanced_schema(circuit)) {
+        print(value: "DIAGRAM UNAVAILABLE: expected OR(AND(Input, NOT(Input)), XOR(Input, Input)).")
+        return
+    }
+
+    root = circuit.root
+
+    if (root.left is CircuitNode and root.right is CircuitNode) {
+        and_gate = root.left
+        xor_gate = root.right
+
+        if (
+            and_gate.left is CircuitNode
+            and and_gate.right is CircuitNode
+            and xor_gate.left is CircuitNode
+            and xor_gate.right is CircuitNode
+        ) {
+            a_node = and_gate.left
+            not_gate = and_gate.right
+            c_node = xor_gate.left
+            d_node = xor_gate.right
+
+            if (not_gate.left is CircuitNode) {
+                b_node = not_gate.left
+
+                a = wire_signal(a_node.evaluate())
+                b = wire_signal(b_node.evaluate())
+                not_output = wire_signal(not_gate.evaluate())
+                and_output = wire_signal(and_gate.evaluate())
+                c = wire_signal(c_node.evaluate())
+                d = wire_signal(d_node.evaluate())
+                xor_output = wire_signal(xor_gate.evaluate())
+                output = wire_signal(root.evaluate())
+
+                print(value: "A  {{a}}────────────────────┐")
+                print(value: "                                ├─[AND]─ {{and_output}}────┐")
+                print(value: "B  {{b}}─[NOT]─ {{not_output}}───┘                     │")
+                print(value: "                                                      ├─[OR]─ {{output}}")
+                print(value: "C  {{c}}────────────┐                             │")
+                print(value: "                        ├─[XOR]─ {{xor_output}}────────────┘")
+                print(value: "D  {{d}}────────────┘")
+            }
+        }
+    }
+
+    null
+}
+
+fn run() returns null {
+    print(value: """╔══════════════════════════════════════╗
+║     VULCI LOGIC CIRCUIT VISUALIZER   ║
+╚══════════════════════════════════════╝""")
+    print(value: "Legend : 🟢 true   🔴 false")
+    print(value: "")
+
+    if (print_circuit_heading(1, $simple_circuit)) {
+        render_simple($simple_circuit)
+    }
+
+    print(value: "")
+    print(value: "")
+    print(value: "")
+
+    if (print_circuit_heading(2, $medium_circuit)) {
+        render_medium($medium_circuit)
+    }
+
+    print(value: "")
+    print(value: "")
+    print(value: "")
+
+    if (print_circuit_heading(3, $circuit)) {
+        render_advanced($circuit)
+    }
+
+    null
+}
+
+run

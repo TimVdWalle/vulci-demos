@@ -1,0 +1,113 @@
+// Phase: Phase 15B demo
+
+// The model is intentionally independent from where circuit data comes from.
+// Today circuit.vci constructs it directly; a future file reader can construct
+// the same values without changing the evaluator or renderer.
+
+enum GateType {
+    Input
+    And
+    Or
+    Xor
+    Not
+}
+
+struct CircuitNode {
+    GateType type
+    str label = ""
+    bool input = false
+    CircuitNode|null left = null
+    CircuitNode|null right = null
+
+    fn display_name() returns str {
+        if (self.type == GateType.Input) {
+            return "INPUT" ~ self.label
+        }
+
+        "{{self.type}}"
+    }
+
+    fn is_valid() returns bool {
+        if (self.type == GateType.Input) {
+            return self.left == null and self.right == null
+        }
+
+        if (self.type == GateType.Not) {
+            return self.left is CircuitNode
+                and self.right == null
+                and self.left.is_valid()
+        }
+
+        self.left is CircuitNode
+            and self.right is CircuitNode
+            and self.left.is_valid()
+            and self.right.is_valid()
+    }
+
+    fn evaluate() returns bool|null {
+        if (self.type == GateType.Input) {
+            if (not (self.left == null and self.right == null)) {
+                return null
+            }
+
+            return self.input
+        }
+
+        if (self.type == GateType.Not) {
+            if (not (self.left is CircuitNode and self.right == null)) {
+                return null
+            }
+
+            value = self.left.evaluate()
+
+            if (value is bool) {
+                return not value
+            }
+
+            return null
+        }
+
+        if (not (self.left is CircuitNode and self.right is CircuitNode)) {
+            return null
+        }
+
+        left_value = self.left.evaluate()
+
+        if (not (left_value is bool)) {
+            return null
+        }
+
+        right_value = self.right.evaluate()
+
+        if (not (right_value is bool)) {
+            return null
+        }
+
+        if (self.type == GateType.And) {
+            return left_value and right_value
+        }
+
+        if (self.type == GateType.Or) {
+            return left_value or right_value
+        }
+
+        if (self.type == GateType.Xor) {
+            return (left_value or right_value) and not (left_value and right_value)
+        }
+
+        null
+    }
+}
+
+struct Circuit {
+    str name
+    CircuitNode root
+
+    fn is_valid() returns bool {
+        self.root.is_valid()
+    }
+
+    fn output() returns bool|null {
+        self.root.evaluate()
+    }
+}
